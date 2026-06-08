@@ -14,6 +14,7 @@ public class Result<T>
 
     public T? Value { get; init; }
 
+    public Result() { }
     private Result(Error[] errors, bool isSuccess, T? value, PaymentStatus status)
     {
         Error = errors;

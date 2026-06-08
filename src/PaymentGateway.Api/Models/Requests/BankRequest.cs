@@ -4,14 +4,14 @@ namespace PaymentGateway.Api.Models.Requests;
 
 public class BankRequest
 {
-    public BankRequest(string cardNumber, string expiryDate, string currency, int amount, string cvv)
-    {
-        CardNumber = cardNumber;
-        ExpiryDate = expiryDate;
-        Currency = currency;
-        Amount = amount;
-        CVV = cvv;
-    }
+    //public BankRequest(string cardNumber, string expiryDate, string currency, int amount, string cvv)
+    //{
+    //    CardNumber = cardNumber;
+    //    ExpiryDate = expiryDate;
+    //    Currency = currency;
+    //    Amount = amount;
+    //    CVV = cvv;
+    //}
 
     public string CardNumber { get; init; }
 

@@ -22,7 +22,7 @@ public class PaymentRequestValidator : AbstractValidator<PaymentRequest>
         RuleFor(x => x.CardNumber).NotEmpty().Length(14, 19).Matches(@"^\d+$");
         RuleFor(x => x.Expiry.Month).InclusiveBetween(1, 12);
         RuleFor(x => x.Expiry.Year).GreaterThanOrEqualTo(DateTime.Today.Year);
-        RuleFor(x => x.Expiry.Date).GreaterThanOrEqualTo(DateTime.Now);
+        //RuleFor(x => x.Expiry.Date).GreaterThanOrEqualTo(DateTime.Now);
         RuleFor(x => x.Money.Currency).Length(3);
         // check iso thing
         RuleFor(x => x.Cvv).Length(3, 4);
