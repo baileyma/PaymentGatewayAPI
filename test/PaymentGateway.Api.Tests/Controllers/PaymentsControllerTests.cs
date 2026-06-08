@@ -1,61 +1,116 @@
-﻿//using System.Net;
-//using System.Net.Http.Json;
-//using Microsoft.AspNetCore.Mvc.Testing;
-//using Microsoft.Extensions.DependencyInjection;
+using System.Net;
 
-//using PaymentGateway.Api.Controllers;
-//using PaymentGateway.Api.Models.Responses;
-//using PaymentGateway.Api.Services;
+using AutoFixture;
 
-//namespace PaymentGateway.Api.Tests;
+using FluentValidation;
+using FluentValidation.Results;
 
-//public class PaymentsControllerTests
-//{
-//    private readonly Random _random = new();
-    
-//    [Fact]
-//    public async Task RetrievesAPaymentSuccessfully()
-//    {
-//        // Arrange
-//        var payment = new PostPaymentResponse
-//        {
-//            Id = Guid.NewGuid(),
-//            ExpiryYear = _random.Next(2023, 2030),
-//            ExpiryMonth = _random.Next(1, 12),
-//            Amount = _random.Next(1, 10000),
-//            CardNumberLastFour = _random.Next(1111, 9999),
-//            Currency = "GBP"
-//        };
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 
-//        var paymentsRepository = new PaymentsRepository();
-//        paymentsRepository.Add(payment);
+using NSubstitute;
+using NSubstitute.ExceptionExtensions;
 
-//        var webApplicationFactory = new WebApplicationFactory<PaymentsController>();
-//        var client = webApplicationFactory.WithWebHostBuilder(builder =>
-//            builder.ConfigureServices(services => ((ServiceCollection)services)
-//                .AddSingleton(paymentsRepository)))
-//            .CreateClient();
+using PaymentGateway.Api.Clients;
+using PaymentGateway.Api.Controllers;
+using PaymentGateway.Api.Models.Common;
+using PaymentGateway.Api.Models.Enums;
+using PaymentGateway.Api.Models.Requests;
+using PaymentGateway.Api.Models.Responses;
+using PaymentGateway.Api.Services;
 
-//        // Act
-//        var response = await client.GetAsync($"/api/Payments/{payment.Id}");
-//        var paymentResponse = await response.Content.ReadFromJsonAsync<PostPaymentResponse>();
-        
-//        // Assert
-//        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-//        Assert.NotNull(paymentResponse);
-//    }
+namespace PaymentGateway.Api.Tests.Controllers;
 
-//    [Fact]
-//    public async Task Returns404IfPaymentNotFound()
-//    {
-//        // Arrange
-//        var webApplicationFactory = new WebApplicationFactory<PaymentsController>();
-//        var client = webApplicationFactory.CreateClient();
-        
-//        // Act
-//        var response = await client.GetAsync($"/api/Payments/{Guid.NewGuid()}");
-        
-//        // Assert
-//        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
-//    }
-//}
+public class PaymentsControllerTests
+{
+    private readonly Fixture _fixture;
+    private readonly IAcquiringBankClient _bankClient;
+    private readonly IValidator<PaymentRequest> _validator;
+    private readonly PaymentsRepository _repo;
+    private readonly PaymentsController _controller;
+
+    public PaymentsControllerTests()
+    {
+        _fixture = new Fixture();
+        _fixture.Customize<Expiry>(c => c.FromFactory(() => new Expiry(2027, 6)));
+        _fixture.Customize<Money>(c => c.FromFactory(() => new Money("GBP", 1000)));
+        _fixture.Customize<PaymentRequest>(c => c
+            .With(x => x.CardNumber, "12345678901235")
+            .With(x => x.Cvv, "123"));
+
+        _bankClient = Substitute.For<IAcquiringBankClient>();
+        _validator = Substitute.For<IValidator<PaymentRequest>>();
+        _repo = new PaymentsRepository();
+
+        // Default: validation passes
+        _validator.Validate(Arg.Any<PaymentRequest>())
+            .Returns(new ValidationResult());
+
+        // Default: bank authorizes
+        _bankClient.SendPayment(Arg.Any<BankRequest>())
+            .Returns(new BankResponse { Authorized = true, AuthorizationCode = "OK" });
+
+        _controller = new PaymentsController(
+            _repo,
+            _bankClient,
+            _validator,
+            new LoggerFactory().CreateLogger<PaymentsController>());
+    }
+
+    [Fact]
+    public async Task PostPayment_ValidationFails_ReturnsBadRequest()
+    {
+        _validator.Validate(Arg.Any<PaymentRequest>())
+            .Returns(new ValidationResult(new[] { new ValidationFailure("Field", "Invalid") }));
+
+        var result = await _controller.PostPaymentAsync(_fixture.Create<PaymentRequest>());
+
+        Assert.IsType<BadRequestObjectResult>(result.Result);
+    }
+
+    [Fact]
+    public async Task PostPayment_BankAuthorizes_ReturnsOkWithAuthorizedStatus()
+    {
+        _bankClient.SendPayment(Arg.Any<BankRequest>())
+            .Returns(new BankResponse { Authorized = true, AuthorizationCode = "ABC123" });
+
+        var actionResult = await _controller.PostPaymentAsync(_fixture.Create<PaymentRequest>());
+
+        var okResult = Assert.IsType<OkObjectResult>(actionResult.Result);
+        var body = Assert.IsType<Result<PaymentResponse>>(okResult.Value);
+        Assert.Equal(PaymentStatus.Authorized, body.Status);
+    }
+
+    [Fact]
+    public async Task PostPayment_BankDeclines_ReturnsOkWithDeclinedStatus()
+    {
+        _bankClient.SendPayment(Arg.Any<BankRequest>())
+            .Returns(new BankResponse { Authorized = false });
+
+        var actionResult = await _controller.PostPaymentAsync(_fixture.Create<PaymentRequest>());
+
+        var okResult = Assert.IsType<OkObjectResult>(actionResult.Result);
+        var body = Assert.IsType<Result<PaymentResponse>>(okResult.Value);
+        Assert.Equal(PaymentStatus.Declined, body.Status);
+    }
+
+    [Fact]
+    public async Task PostPayment_BankReturns503_Returns502()
+    {
+        _bankClient.SendPayment(Arg.Any<BankRequest>())
+            .Throws(new HttpRequestException("unavailable", null, HttpStatusCode.ServiceUnavailable));
+
+        var actionResult = await _controller.PostPaymentAsync(_fixture.Create<PaymentRequest>());
+
+        var statusResult = Assert.IsType<StatusCodeResult>(actionResult.Result);
+        Assert.Equal(502, statusResult.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetPayment_IdNotFound_Returns404()
+    {
+        var result = await _controller.GetPaymentAsync(Guid.NewGuid());
+
+        Assert.IsType<NotFoundResult>(result.Result);
+    }
+}
