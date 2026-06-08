@@ -1,5 +1,9 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.DependencyInjection;
+
+using PaymentGateway.Api.Services;
+
 using WireMock.Server;
 
 namespace PaymentGateway.Api.IntegrationTests
@@ -8,6 +12,7 @@ namespace PaymentGateway.Api.IntegrationTests
     {
         public WireMockServer WireMockServer { get; private set; }
         public HttpClient Client { get; private set; }
+        public PaymentsRepository Repository => Services.GetRequiredService<PaymentsRepository>();
 
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
