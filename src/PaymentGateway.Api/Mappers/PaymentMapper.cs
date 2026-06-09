@@ -22,7 +22,7 @@ public static class PaymentMapper
 
     public static PaymentResponse MapToPaymentReponse(BankResponse bankClientResponse, PaymentRequest paymentRequest) => new()
     {
-        Id = Guid.NewGuid(),
+        Id = paymentRequest.Id,
         CardNumberLastFour = paymentRequest.CardNumber[^4..],
         Expiry = paymentRequest.Expiry,
         Money = paymentRequest.Money,
