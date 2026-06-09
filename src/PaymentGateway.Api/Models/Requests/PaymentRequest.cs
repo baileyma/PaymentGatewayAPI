@@ -2,13 +2,13 @@
 using PaymentGateway.Api.Models.Common;
 namespace PaymentGateway.Api.Models.Requests;
 
-public class PaymentRequest
+public record PaymentRequest
 {
-    public Guid Id { get; set; }
-    public string CardNumber { get; set; } = null!;
-    public Expiry Expiry { get; set; } = null!;
-    public Money Money { get; set; } = null!;
-    public string Cvv { get; set; } = null!;
+    public Guid Id { get; init; } = Guid.NewGuid();
+    public string CardNumber { get; init; } = null!;
+    public Expiry Expiry { get; init; } = null!;
+    public Money Money { get; init; } = null!;
+    public string Cvv { get; init; } = null!;
 }
 
 public class PaymentRequestValidator : AbstractValidator<PaymentRequest>
