@@ -26,6 +26,14 @@ using PaymentGateway.Api.Services;
 // 5 GIT COMMITS...
 // 6 DO LOTS OF MANUAL TESTING FOR EDGE CASES...MAKE AGENT ORCHESTRATION TO REVIEW IT?
 
+// TODAY
+// finish tests...one more integration test class, then unit tests
+
+// TOMORROW
+// validation
+// observability
+// write design decisions
+
 
 
 

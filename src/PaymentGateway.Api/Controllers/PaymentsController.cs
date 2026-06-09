@@ -41,15 +41,14 @@ public class PaymentsController : Controller
             var errors = validation.Errors.Select(valError => new Error($"{valError.ErrorMessage}")).ToArray();
             // CHECK
             _logger.LogInformation("Request failed validation", paymentRequest.Id);
-            // should it be rejected? doesn't even get to the bank?
             return BadRequest(Result<PaymentResponse>.Rejected(errors));
         }
         
-        var mappedPayment = PaymentMapper.Map(paymentRequest);
+        var bankClientRequest = PaymentMapper.Map(paymentRequest);
         
         try
         {
-            var response = await _client.SendPayment(mappedPayment);
+            var bankClientResponse = await _client.SendPayment(bankClientRequest);
 
             var paymentResponse = new PaymentResponse()
             {
@@ -57,12 +56,12 @@ public class PaymentsController : Controller
                 CardNumberLastFour = paymentRequest.CardNumber[^4..],
                 Expiry = paymentRequest.Expiry,
                 Money = paymentRequest.Money,
-                Status = response.Authorized ? PaymentStatus.Authorized : PaymentStatus.Declined
+                Status = bankClientResponse.Authorized ? PaymentStatus.Authorized : PaymentStatus.Declined
             };
 
             _paymentsRepository.Add(paymentResponse);
 
-            if (!response.Authorized)
+            if (!bankClientResponse.Authorized)
                 return Ok(Result<PaymentResponse>.Declined(paymentResponse));
 
             return Ok(Result<PaymentResponse>.Authorized(paymentResponse));

@@ -12,7 +12,7 @@
 
         public int Month { get; init; }
 
-        public DateOnly Date { get; init; }
+        public DateOnly Date { get; }
 
         public override string ToString() => Date.ToString("MM/yyyy");
     }
