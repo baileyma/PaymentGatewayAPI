@@ -11,11 +11,11 @@ public interface IAcquiringBankClient
     Task<BankResponse> SendPayment(BankRequest request);
 }
 
-public class AcquiringBankClient : IAcquiringBankClient
+public class BankClient : IAcquiringBankClient
 {
     private readonly HttpClient _client;
 
-    public AcquiringBankClient(HttpClient client)
+    public BankClient(HttpClient client)
     {
         _client = client;
     }
@@ -31,10 +31,9 @@ public class AcquiringBankClient : IAcquiringBankClient
 
         return response.StatusCode switch
         {
-            HttpStatusCode.OK => await response.Content.ReadFromJsonAsync<BankResponse>(jsonOptions),
+            HttpStatusCode.OK => await response.Content.ReadFromJsonAsync<BankResponse>(jsonOptions) ?? throw new HttpRequestException("Bank returned empty response", null, HttpStatusCode.OK),
             HttpStatusCode.BadRequest => throw new HttpRequestException("Acquiring bank rejected the request as invalid", null, HttpStatusCode.BadRequest),
-            HttpStatusCode.ServiceUnavailable => throw new HttpRequestException("Bank service unavailable", null, HttpStatusCode.ServiceUnavailable),// pass an error saying that card ends in 0?...or are we just passing bankresponse with null values
-             // if we validate properly, no need to catch this? shouldn't happen, if does should crash whole program
+            HttpStatusCode.ServiceUnavailable => throw new HttpRequestException("Bank service unavailable", null, HttpStatusCode.ServiceUnavailable),
             _ => throw new HttpRequestException("Unexpected response from acquiring bank", null, response.StatusCode)
         };
     }
