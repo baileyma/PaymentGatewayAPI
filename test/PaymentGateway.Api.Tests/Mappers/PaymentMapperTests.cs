@@ -1,78 +1,55 @@
-using AutoFixture;
-
 using PaymentGateway.Api.Mappers;
 using PaymentGateway.Api.Models.Common;
+using PaymentGateway.Api.Models.Enums;
 using PaymentGateway.Api.Models.Requests;
+using PaymentGateway.Api.Models.Responses;
 
 namespace PaymentGateway.Api.Tests.Mappers;
 
 public class PaymentMapperTests
 {
-    private readonly Fixture _fixture;
-
-    public PaymentMapperTests()
-    {
-        _fixture = new Fixture();
-        _fixture.Customize<Expiry>(c => c.FromFactory(() => new Expiry(2027, 6)));
-        _fixture.Customize<Money>(c => c.FromFactory(() => new Money("GBP", _fixture.Create<int>())));
-        _fixture.Customize<PaymentRequest>(c => c
-            .With(x => x.CardNumber, "12345678901234")
-            .With(x => x.Cvv, "123"));
-    }
-
     [Fact]
-    public void Map_SetsCardNumberAsString()
+    public void MapFromPaymentRequest_MapsAllFieldsCorrectly()
     {
-        var request = _fixture.Create<PaymentRequest>();
+        var request = new PaymentRequest
+        {
+            CardNumber = "12345678901234",
+            Expiry = new Expiry(2027, 3),
+            Money = new Money("GBP", 1050),
+            Cvv = "123"
+        };
 
-        var result = PaymentMapper.Map(request);
+        var result = PaymentMapper.MapFromPaymentRequest(request);
 
-        Assert.Equal(request.CardNumber, result.CardNumber);
-    }
-
-    [Fact]
-    public void Map_SetsExpiryDateFromExpiry()
-    {
-        _fixture.Customize<Expiry>(c => c.FromFactory(() => new Expiry(2027, 3)));
-        var request = _fixture.Create<PaymentRequest>();
-
-        var result = PaymentMapper.Map(request);
-
+        Assert.Equal("12345678901234", result.CardNumber);
         Assert.Equal("03/2027", result.ExpiryDate);
+        Assert.Equal("GBP", result.Currency);
+        Assert.Equal(1050, result.Amount);
+        Assert.Equal("123", result.CVV);
     }
 
     [Fact]
-    public void Map_SetsCurrencyFromMoney()
+    public void MapToPaymentResponse_MapsAllFieldsCorrectly()
     {
-        _fixture.Customize<Money>(c => c.FromFactory(() => new Money("USD", 500)));
-        var request = _fixture.Create<PaymentRequest>();
+        var request = new PaymentRequest
+        {
+            CardNumber = "12345678901234",
+            Expiry = new Expiry(2027, 3),
+            Money = new Money("GBP", 1050),
+            Cvv = "123"
+        };
 
-        var result = PaymentMapper.Map(request);
+        var bankResponse = new BankResponse
+        {
+            Authorized = true,
+            AuthorizationCode = "abc123"
+        };
 
-        Assert.Equal("USD", result.Currency);
-    }
+        var result = PaymentMapper.MapToPaymentReponse(bankResponse, request);
 
-    [Fact]
-    public void Map_SetsAmountFromMoney()
-    {
-        _fixture.Customize<Money>(c => c.FromFactory(() => new Money("GBP", 9999)));
-        var request = _fixture.Create<PaymentRequest>();
-
-        var result = PaymentMapper.Map(request);
-
-        Assert.Equal(9999, result.Amount);
-    }
-
-    [Fact]
-    public void Map_SetsCvv()
-    {
-        _fixture.Customize<PaymentRequest>(c => c
-            .With(x => x.CardNumber, "12345678901234")
-            .With(x => x.Cvv, "456"));
-        var request = _fixture.Create<PaymentRequest>();
-
-        var result = PaymentMapper.Map(request);
-
-        Assert.Equal("456", result.CVV);
+        Assert.Equal("1234", result.CardNumberLastFour);
+        Assert.Equal(request.Expiry, result.Expiry);
+        Assert.Equal(request.Money, result.Money);
+        Assert.Equal(PaymentStatus.Authorized, result.Status);
     }
 }

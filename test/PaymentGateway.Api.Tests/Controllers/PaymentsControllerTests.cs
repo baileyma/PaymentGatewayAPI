@@ -1,16 +1,11 @@
 using System.Net;
-
 using AutoFixture;
-
 using FluentValidation;
 using FluentValidation.Results;
-
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
-
 using PaymentGateway.Api.Clients;
 using PaymentGateway.Api.Controllers;
 using PaymentGateway.Api.Models.Common;
@@ -32,7 +27,7 @@ public class PaymentsControllerTests
     public PaymentsControllerTests()
     {
         _fixture = new Fixture();
-        _fixture.Customize<Expiry>(c => c.FromFactory(() => new Expiry(2027, 6)));
+        _fixture.Customize<Expiry>(c => c.FromFactory(() => new Expiry(2027, 6)).OmitAutoProperties());
         _fixture.Customize<Money>(c => c.FromFactory(() => new Money("GBP", 1000)));
         _fixture.Customize<PaymentRequest>(c => c
             .With(x => x.CardNumber, "12345678901235")
@@ -85,7 +80,7 @@ public class PaymentsControllerTests
     public async Task PostPayment_BankDeclines_ReturnsOkWithDeclinedStatus()
     {
         _bankClient.SendPayment(Arg.Any<BankRequest>())
-            .Returns(new BankResponse { Authorized = false });
+            .Returns(new BankResponse { Authorized = false, AuthorizationCode = "" });
 
         var actionResult = await _controller.PostPaymentAsync(_fixture.Create<PaymentRequest>());
 
