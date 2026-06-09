@@ -40,61 +40,52 @@ public class PaymentsController : Controller
             return BadRequest(Result<PaymentResponse>.Rejected(errors));
         }
         
-        var bankClientRequest = PaymentMapper.Map(paymentRequest);
+        var bankClientRequest = PaymentMapper.MapFromPaymentRequest(paymentRequest);
         
         try
         {
             var bankClientResponse = await _client.SendPayment(bankClientRequest);
 
-            var paymentResponse = new PaymentResponse()
-            {
-                Id = Guid.NewGuid(),
-                CardNumberLastFour = paymentRequest.CardNumber[^4..],
-                Expiry = paymentRequest.Expiry,
-                Money = paymentRequest.Money,
-                Status = bankClientResponse.Authorized ? PaymentStatus.Authorized : PaymentStatus.Declined
-            };
-
+            // 1 from here....
+            var paymentResponse = PaymentMapper.MapToPaymentReponse(bankClientResponse, paymentRequest);
+                
             _paymentsRepository.Add(paymentResponse);
 
             if (!bankClientResponse.Authorized)
                 return Ok(Result<PaymentResponse>.Declined(paymentResponse));
 
             return Ok(Result<PaymentResponse>.Authorized(paymentResponse));
+
+            //... to here, check test covers everything...Result tests?
         }
 
         catch(HttpRequestException ex)
         {
             if (ex.StatusCode == HttpStatusCode.BadRequest)
             {
-                // ASP.NET Core's built-in logging via ILogger<PaymentsController> injected into the controller would handle this. You'd call _logger.LogError(ex, "Acquiring bank returned 400 - possible contract change") in the catch 
-                // this could mean why have missed a validation error...the bank picked it up but we didn't
-                _logger.LogError(ex, "Unexpected response from acquiring bank: {StatusCode}", ex.StatusCode);
+                _logger.LogError(ex, "Unexpected (400) BadRequest received from bank server - possible validator gap - for payment {PaymentId}", paymentRequest.Id);
+                return StatusCode(500);
             }
 
             if (ex.StatusCode == HttpStatusCode.ServiceUnavailable)
             {
-                // CHECK
-                _logger.LogInformation("(503) ServiceUnavailable received from the bank");
+                _logger.LogWarning("(503) ServiceUnavailable received from bank server for payment {PaymentId}", paymentRequest.Id);
                 return StatusCode(502);
             }
 
-            _logger.LogWarning($"{ex.StatusCode.ToString()}received from the bank");
+            _logger.LogError(ex, "Unexpected ({StatusCode}) received from bank server for payment {PaymentId}", ex.StatusCode, paymentRequest.Id);
             return StatusCode(500);
-
-                    }       
+        }       
     }
 
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<PaymentResponse?>> GetPaymentAsync(Guid id)
     {
-        // experiment: what if Id is not a guid? does it need validating?
         var payment = _paymentsRepository.Get(id);
 
         if (payment is null)
         {
-            // CHECK
-            _logger.LogInformation("Payment not found");
+            _logger.LogWarning("Payment not found for Id: {Id}", id);
             return NotFound();
         }
 
