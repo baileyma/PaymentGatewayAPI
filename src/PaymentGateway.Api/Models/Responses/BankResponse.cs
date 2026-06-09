@@ -1,11 +1,9 @@
-﻿using System.Text.Json.Serialization;
-
-namespace PaymentGateway.Api.Models.Responses
+﻿namespace PaymentGateway.Api.Models.Responses
 {
     public class BankResponse
     {
-        public bool Authorized { get; init; }
+        public required bool Authorized { get; init; }
 
-        public string AuthorizationCode { get; init; }
+        public required string AuthorizationCode { get; init; }
     }
 }

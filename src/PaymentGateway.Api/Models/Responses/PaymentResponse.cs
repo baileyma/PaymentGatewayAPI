@@ -1,16 +1,14 @@
-﻿using System.Text.Json.Serialization;
-
-using PaymentGateway.Api.Models.Common;
+﻿using PaymentGateway.Api.Models.Common;
 using PaymentGateway.Api.Models.Enums;
 
 namespace PaymentGateway.Api.Models.Responses;
 
 public class PaymentResponse 
 {
-    public Guid Id { get; set; }
+    public required Guid Id { get; init; }
     
-    public PaymentStatus Status { get; set; }
-    public string CardNumberLastFour { get; set; }
-    public Expiry Expiry { get; set; }
-    public Money Money { get; set; }
+    public required PaymentStatus Status { get; init; }
+    public required string CardNumberLastFour { get; init; }
+    public required Expiry Expiry { get; init; }
+    public required Money Money { get; init; }
 }
