@@ -6,14 +6,19 @@ namespace PaymentGateway.Api.Mappers;
 
 public static class PaymentMapper
 {
-    public static BankRequest MapFromPaymentRequest(PaymentRequest paymentRequest) => new ()
+    public static BankRequest MapFromPaymentRequest(PaymentRequest paymentRequest)
     {
-        CardNumber = paymentRequest.CardNumber.ToString(),
-        ExpiryDate = paymentRequest.Expiry.ToString(),
-        Currency = paymentRequest.Money.Currency,
-        Amount = paymentRequest.Money.Amount,
-        CVV = paymentRequest.Cvv
-    };
+        var expiry = paymentRequest.Expiry;
+
+        return new()
+        {
+            CardNumber = paymentRequest.CardNumber.ToString(),
+            ExpiryDate = new DateOnly(expiry.Year, expiry.Month, 1).ToString("MM/yyyy"),
+            Currency = paymentRequest.Money.Currency,
+            Amount = paymentRequest.Money.Amount,
+            CVV = paymentRequest.Cvv
+        };
+    }
 
     public static PaymentResponse MapToPaymentReponse(BankResponse bankClientResponse, PaymentRequest paymentRequest) => new()
     {
