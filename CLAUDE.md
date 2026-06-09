@@ -3,6 +3,8 @@
 ## What this is
 ASP.NET Core Web API (C#) implementing a payment gateway for the Checkout.com engineering assessment. Merchants can process and retrieve card payments. A simulated acquiring bank runs locally via Docker.
 
+See `README.md` for the high-level summary and `paymentflow.md` for the merchant ↔ gateway ↔ bank interaction diagrams.
+
 ## Build & run
 ```bash
 dotnet build PaymentGateway.sln
@@ -16,28 +18,36 @@ docker-compose up   # starts bank simulator on localhost:8080
 ```
 src/PaymentGateway.Api/
   Controllers/       PaymentsController    — POST /api/payments, GET /api/payments/{id}
-  Clients/           AcquiringBankClient   — HTTP client to bank simulator
+  Clients/           BankClient            — HTTP client to bank simulator (impl of IAcquiringBankClient)
   Services/          PaymentsRepository    — in-memory store (List<PaymentResponse>)
-  Mappers/           PaymentMapper         — PaymentRequest → BankRequest
+  Mappers/           PaymentMapper         — PaymentRequest → BankRequest, BankResponse → PaymentResponse
   Models/
-    Requests/        PaymentRequest + FluentValidation validator
+    Requests/        PaymentRequest + PaymentRequestValidator (FluentValidation)
+                     BankRequest                                — bank simulator contract (outbound)
     Responses/       PaymentResponse       — what we store and return to merchants
-    BankRequest/Response                   — bank simulator contract
-    Common/          Expiry, Money
+                     BankResponse                               — bank simulator contract (inbound)
+    Common/          Expiry, Money, Result<T>, Error
     Enums/           PaymentStatus         — Authorized | Declined | Rejected
-    Result<T>                              — discriminated union wrapping bank response + status
 
-test/PaymentGateway.Api.Tests/
+test/PaymentGateway.Api.Tests/             — unit tests
   Controllers/       PaymentsControllerTests
   Mappers/           PaymentMapperTests
   Services/          PaymentRepositoryTests
+  Models/Requests/   PaymentRequestValidatorTests
+
+PaymentGateway.Api.IntegrationTests/       — integration tests via CustomWebApplicationFactory
+  PostPaymentTests, GetPaymentTests
 ```
 
 ## Key design decisions
-- **FluentValidation** for request validation; invalid requests return `Rejected` without calling the bank.
-- **`Result<T>`** wraps bank responses and carries `PaymentStatus` + any errors — avoids exception-as-flow-control.
+- **FluentValidation** for request validation; invalid requests return `Rejected` (400) without calling the bank.
+- **`Result<T>`** wraps the outcome and carries `PaymentStatus` + any errors — avoids exception-as-flow-control. Exceptions are reserved for transport failures.
+- **Three terminal states** (`Authorized`, `Declined`, `Rejected`) distinguish "bank approved", "bank refused", and "bank never called".
 - **`PaymentsRepository`** is a singleton in-memory store — no real DB, per spec.
 - **`IAcquiringBankClient`** is an interface to allow mocking in tests.
+- **Bank failure translation** in the controller: bank `503` → gateway `502 Bad Gateway`; bank `400` → gateway `500` (signals a validator gap); other unexpected → `500`.
+- **Structured logging** keyed on `PaymentId`. `Warning` for expected-but-notable events (validation rejected, bank 503); `Error` for "shouldn't happen" cases (bank 400, unexpected statuses). No card data in logs.
+- **PCI-conscious response shape**: `PaymentResponse` stores only `CardNumberLastFour`; full PAN and CVV are never persisted.
 
 ## Bank simulator behaviour
 - POST `http://localhost:8080/payments` with `{ card_number, expiry_date, currency, amount, cvv }`
@@ -46,11 +56,11 @@ test/PaymentGateway.Api.Tests/
 - Card ending even → `200 { authorized: false }`
 - Card ending 0 → `503 Service Unavailable`
 
-## Known incomplete areas (as of June 2026)
-- `AcquiringBankClient` has a broken JSON serializer options block — does not compile.
-- `PostPaymentAsync` never stores the payment in the repository and has a missing `return` for the fall-through path.
-- `Expiry.ToString()` always prepends "0" to month — broken for month >= 10.
-- Expiry validation only checks year, not the month+year combination.
-- `GET /api/payments/{id}` returns 200 with `null` body if ID not found — should be 404.
-- CVV numeric-only validation is missing from the validator.
-- Accepted currencies are not constrained to a specific list (spec says ≤ 3 ISO codes).
+## Known assumptions / out-of-scope (as of June 2026)
+- Single-instance deployment — repository is in-memory and not thread-safe; restarts lose data.
+- No authentication or merchant identity (no API key, no `merchant_id` on the request/response).
+- No idempotency keys — duplicate submissions are processed twice.
+- `Amount` is an `int` in minor units (assumed, not documented in the contract).
+- Supported currencies hardcoded to GBP / EUR / USD.
+- No retries, circuit breaker, or explicit HTTP timeout on the bank client.
+- `BankResponse.AuthorizationCode` is `required` but the simulator only returns it on success — declined deserialisation is fragile.
