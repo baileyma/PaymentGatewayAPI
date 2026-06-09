@@ -1,9 +1,6 @@
 ﻿using System.Net;
-
 using FluentValidation;
-
 using Microsoft.AspNetCore.Mvc;
-
 using PaymentGateway.Api.Clients;
 using PaymentGateway.Api.Mappers;
 using PaymentGateway.Api.Models.Common;
@@ -38,9 +35,8 @@ public class PaymentsController : Controller
 
         if (!validation.IsValid)
         {
-            var errors = validation.Errors.Select(valError => new Error($"{valError.ErrorMessage}")).ToArray();
-            // CHECK
-            _logger.LogInformation("Request failed validation", paymentRequest.Id);
+            var errors = validation.Errors.Select(error => new Error($"{error.ErrorMessage}")).ToArray();
+            _logger.LogWarning("Payment {PaymentId} failed validation: {Errors}", paymentRequest.Id, string.Join(", ", validation.Errors.Select(e => e.ErrorMessage)));
             return BadRequest(Result<PaymentResponse>.Rejected(errors));
         }
         
