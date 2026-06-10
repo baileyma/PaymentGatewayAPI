@@ -46,7 +46,6 @@ public class PaymentsController : Controller
         {
             var bankClientResponse = await _client.SendPayment(bankClientRequest);
 
-            // 1 from here....
             var paymentResponse = PaymentMapper.MapToPaymentReponse(bankClientResponse, paymentRequest);
                 
             _paymentsRepository.Add(paymentResponse);
@@ -55,8 +54,6 @@ public class PaymentsController : Controller
                 return Ok(Result<PaymentResponse>.Declined(paymentResponse));
 
             return Ok(Result<PaymentResponse>.Authorized(paymentResponse));
-
-            //... to here, check test covers everything...Result tests?
         }
 
         catch(HttpRequestException ex)
