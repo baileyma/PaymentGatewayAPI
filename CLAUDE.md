@@ -1,7 +1,7 @@
 # Payment Gateway — CLAUDE.md
 
 ## What this is
-ASP.NET Core Web API (C#) implementing a payment gateway for the Checkout.com engineering assessment. Merchants can process and retrieve card payments. A simulated acquiring bank runs locally via Docker.
+ASP.NET Core Web API (C#) implementing a payment gateway. Merchants can process and retrieve card payments. A simulated acquiring bank runs locally via Docker.
 
 See `README.md` for the high-level summary and `paymentflow.md` for the merchant ↔ gateway ↔ bank interaction diagrams.
 
