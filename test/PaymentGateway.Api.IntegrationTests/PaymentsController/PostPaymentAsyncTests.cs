@@ -32,7 +32,7 @@ public class PostPaymentAsyncTests : IClassFixture<CustomWebApplicationFactory>
         }
         """;
 
-    _factory.WireMockServer.Given(Request.Create().WithPath("/payments").UsingPost())
+        _factory.WireMockServer.Given(Request.Create().WithPath("/payments").UsingPost())
         .RespondWith(Response.Create().WithStatusCode(200)
         .WithHeader("Content-Type", "application/json")
         .WithBody(bankResponse));
@@ -107,7 +107,24 @@ public class PostPaymentAsyncTests : IClassFixture<CustomWebApplicationFactory>
         var httpResponse = await _factory.Client.PostAsJsonAsync("/api/payments", invalidRequest);
         Assert.Equal(HttpStatusCode.BadRequest, httpResponse.StatusCode);
         Assert.Empty(_factory.WireMockServer.LogEntries);
+    }
 
+    [Fact]
+    public async Task PostPaymentEndpoint_Returns500_WhenBankReturns400()
+    {
+        // Arrange
+        var request = CreatePaymentRequest("2222405343248877");
+
+        _factory.WireMockServer.Given(Request.Create().WithPath("/payments").UsingPost())
+            .RespondWith(Response.Create().WithStatusCode(400)
+            .WithHeader("Content-Type", "application/json")
+            .WithBody("""{"error": "bad request"}"""));
+
+        // Act
+        var httpResponse = await _factory.Client.PostAsJsonAsync("/api/payments", request);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.InternalServerError, httpResponse.StatusCode);
     }
 
     private PaymentRequest CreatePaymentRequest(string cardNumber)
