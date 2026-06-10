@@ -12,9 +12,15 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddLogging();
 builder.Services.AddSingleton<PaymentsRepository>();
+
+var baseAddress = builder.Configuration["AcquiringBank:BaseAddress"];
+
+if (String.IsNullOrWhiteSpace(baseAddress))
+    throw new InvalidOperationException("Configuration value 'AcquiringBank:BaseAddress' is not set");
+
 builder.Services.AddHttpClient<IAcquiringBankClient, BankClient>(client => 
 {
-    client.BaseAddress = new Uri(builder.Configuration["AcquiringBank:BaseAddress"]);
+    client.BaseAddress = new Uri(baseAddress);
 });
 
 builder.Services.AddScoped<IValidator<PaymentRequest>, PaymentRequestValidator>();
