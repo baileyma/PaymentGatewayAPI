@@ -11,13 +11,7 @@ public class PaymentMapperTests
     [Fact]
     public void MapFromPaymentRequest_MapsAllFieldsCorrectly()
     {
-        var request = new PaymentRequest
-        {
-            CardNumber = "12345678901234",
-            Expiry = new Expiry(2027, 3),
-            Money = new Money("GBP", 1050),
-            Cvv = "123"
-        };
+        var request = GetPaymentRequest();
 
         var result = PaymentMapper.MapFromPaymentRequest(request);
 
@@ -31,13 +25,7 @@ public class PaymentMapperTests
     [Fact]
     public void MapToPaymentResponse_MapsAllFieldsCorrectly()
     {
-        var request = new PaymentRequest
-        {
-            CardNumber = "12345678901234",
-            Expiry = new Expiry(2027, 3),
-            Money = new Money("GBP", 1050),
-            Cvv = "123"
-        };
+        var request = GetPaymentRequest();
 
         var bankResponse = new BankResponse
         {
@@ -52,4 +40,28 @@ public class PaymentMapperTests
         Assert.Equal(request.Money, result.Money);
         Assert.Equal(PaymentStatus.Authorized, result.Status);
     }
+
+    [Fact]
+    public void MapToPaymentResponse_SetsDeclinedStatus_WhenBankNotAuthorized()
+    {
+        var request = GetPaymentRequest();
+
+        var bankResponse = new BankResponse
+        {
+            Authorized = false,
+            AuthorizationCode = ""
+        };
+
+        var result = PaymentMapper.MapToPaymentReponse(bankResponse, request);
+
+        Assert.Equal(PaymentStatus.Declined, result.Status);
+    }
+
+    private PaymentRequest GetPaymentRequest() => new PaymentRequest
+    {
+        CardNumber = "12345678901234",
+        Expiry = new Expiry(2027, 3),
+        Money = new Money("GBP", 1050),
+        Cvv = "123"
+    };
 }

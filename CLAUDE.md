@@ -59,8 +59,6 @@ PaymentGateway.Api.IntegrationTests/       — integration tests via CustomWebAp
 ## Known assumptions / out-of-scope (as of June 2026)
 - Single-instance deployment — repository is in-memory and not thread-safe; restarts lose data.
 - No authentication or merchant identity (no API key, no `merchant_id` on the request/response).
-- No idempotency keys — duplicate submissions are processed twice.
 - `Amount` is an `int` in minor units (assumed, not documented in the contract).
 - Supported currencies hardcoded to GBP / EUR / USD.
 - No retries, circuit breaker, or explicit HTTP timeout on the bank client.
-- `BankResponse.AuthorizationCode` is `required` but the simulator only returns it on success — declined deserialisation is fragile.
