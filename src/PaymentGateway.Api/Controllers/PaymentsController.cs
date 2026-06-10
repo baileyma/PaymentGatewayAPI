@@ -1,10 +1,12 @@
 ﻿using System.Net;
+
 using FluentValidation;
+
 using Microsoft.AspNetCore.Mvc;
+
 using PaymentGateway.Api.Clients;
 using PaymentGateway.Api.Mappers;
 using PaymentGateway.Api.Models.Common;
-using PaymentGateway.Api.Models.Enums;
 using PaymentGateway.Api.Models.Requests;
 using PaymentGateway.Api.Models.Responses;
 using PaymentGateway.Api.Services;
@@ -39,15 +41,15 @@ public class PaymentsController : Controller
             _logger.LogWarning("Payment {PaymentId} failed validation: {Errors}", paymentRequest.Id, string.Join(", ", validation.Errors.Select(e => e.ErrorMessage)));
             return BadRequest(Result<PaymentResponse>.Rejected(errors));
         }
-        
+
         var bankClientRequest = PaymentMapper.MapFromPaymentRequest(paymentRequest);
-        
+
         try
         {
             var bankClientResponse = await _client.SendPayment(bankClientRequest);
 
             var paymentResponse = PaymentMapper.MapToPaymentReponse(bankClientResponse, paymentRequest);
-                
+
             _paymentsRepository.Add(paymentResponse);
 
             if (!bankClientResponse.Authorized)
@@ -55,8 +57,7 @@ public class PaymentsController : Controller
 
             return Ok(Result<PaymentResponse>.Authorized(paymentResponse));
         }
-
-        catch(HttpRequestException ex)
+        catch (HttpRequestException ex)
         {
             if (ex.StatusCode == HttpStatusCode.BadRequest)
             {
@@ -72,7 +73,7 @@ public class PaymentsController : Controller
 
             _logger.LogError(ex, "Unexpected ({StatusCode}) received from bank server for payment {PaymentId}", ex.StatusCode, paymentRequest.Id);
             return StatusCode(500);
-        }       
+        }
     }
 
     [HttpGet("{id:guid}")]

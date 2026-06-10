@@ -14,7 +14,7 @@ using WireMock.ResponseBuilders;
 
 public class PostPaymentAsyncTests : IClassFixture<CustomWebApplicationFactory>
 {
-    private CustomWebApplicationFactory _factory;
+    private readonly CustomWebApplicationFactory _factory;
 
     public PostPaymentAsyncTests(CustomWebApplicationFactory factory)
     {
