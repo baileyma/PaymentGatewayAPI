@@ -1,4 +1,4 @@
-﻿namespace PaymentGateway.Api.IntegrationTests;
+﻿namespace PaymentGateway.Api.IntegrationTests.PaymentsController;
 
 using System.Net;
 using System.Net.Http.Json;
@@ -12,17 +12,11 @@ using PaymentGateway.Api.Models.Responses;
 using WireMock.RequestBuilders;
 using WireMock.ResponseBuilders;
 
-public class PostPaymentTests : IClassFixture<CustomWebApplicationFactory>
+public class PostPaymentAsyncTests : IClassFixture<CustomWebApplicationFactory>
 {
     private CustomWebApplicationFactory _factory;
 
-    private readonly static JsonSerializerOptions JsonOptions = new JsonSerializerOptions()
-    {
-        Converters = { new JsonStringEnumConverter() },
-        PropertyNameCaseInsensitive = true
-    };
-
-    public PostPaymentTests(CustomWebApplicationFactory factory)
+    public PostPaymentAsyncTests(CustomWebApplicationFactory factory)
     {
         _factory = factory;
         _factory.WireMockServer.Reset();
@@ -48,7 +42,7 @@ public class PostPaymentTests : IClassFixture<CustomWebApplicationFactory>
         var httpResponse = await _factory.Client.PostAsJsonAsync("/api/payments", request);
         
         httpResponse.EnsureSuccessStatusCode();
-        var response = await httpResponse.Content.ReadFromJsonAsync<Result<PaymentResponse>>(JsonOptions);
+        var response = await httpResponse.Content.ReadFromJsonAsync<Result<PaymentResponse>>(CustomWebApplicationFactory.JsonOptions);
         Assert.Equal(PaymentStatus.Authorized, response.Status);
     }
 
@@ -75,7 +69,7 @@ public class PostPaymentTests : IClassFixture<CustomWebApplicationFactory>
 
         // Assert
         httpResponse.EnsureSuccessStatusCode();
-        var response = await httpResponse.Content.ReadFromJsonAsync<Result<PaymentResponse>>(JsonOptions);
+        var response = await httpResponse.Content.ReadFromJsonAsync<Result<PaymentResponse>>(CustomWebApplicationFactory.JsonOptions);
         Assert.Equal(PaymentStatus.Declined, response.Status);
         Assert.Equal("8876", response.Value.CardNumberLastFour);
     }

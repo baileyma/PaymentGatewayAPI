@@ -1,9 +1,7 @@
-﻿namespace PaymentGateway.Api.IntegrationTests;
+﻿namespace PaymentGateway.Api.IntegrationTests.PaymentsController;
 
 using System.Net;
 using System.Net.Http.Json;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 using Models.Enums;
 using PaymentGateway.Api.Models.Common;
 using PaymentGateway.Api.Models.Responses;
@@ -11,12 +9,6 @@ using PaymentGateway.Api.Models.Responses;
 public class GetPaymentTests : IClassFixture<CustomWebApplicationFactory>
 {
     private readonly CustomWebApplicationFactory _factory;
-
-    private readonly static JsonSerializerOptions JsonOptions = new()
-    {
-        Converters = { new JsonStringEnumConverter() },
-        PropertyNameCaseInsensitive = true
-    };
 
     public GetPaymentTests(CustomWebApplicationFactory factory)
     {
@@ -43,7 +35,7 @@ public class GetPaymentTests : IClassFixture<CustomWebApplicationFactory>
 
         // Assert
         httpResponse.EnsureSuccessStatusCode();
-        var response = await httpResponse.Content.ReadFromJsonAsync<PaymentResponse>(JsonOptions);
+        var response = await httpResponse.Content.ReadFromJsonAsync<PaymentResponse>(CustomWebApplicationFactory.JsonOptions);
         Assert.Equal(payment.Id, response!.Id);
         Assert.Equal(PaymentStatus.Authorized, response.Status);
         Assert.Equal("8877", response.CardNumberLastFour);
