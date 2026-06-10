@@ -1,6 +1,7 @@
 using System.Text.Json.Serialization;
 using FluentValidation;
 using PaymentGateway.Api.Clients;
+using PaymentGateway.Api.Models.Options;
 using PaymentGateway.Api.Models.Requests;
 using PaymentGateway.Api.Services;
 
@@ -17,6 +18,8 @@ builder.Services.AddHttpClient<IAcquiringBankClient, BankClient>(client =>
 });
 
 builder.Services.AddScoped<IValidator<PaymentRequest>, PaymentRequestValidator>();
+builder.Services.Configure<PaymentOptions>(
+    builder.Configuration.GetRequiredSection(PaymentOptions.SectionName));
 
 var app = builder.Build();
 

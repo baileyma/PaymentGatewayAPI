@@ -1,20 +1,17 @@
 using FluentValidation.TestHelper;
+
+using Microsoft.Extensions.Options;
+
 using PaymentGateway.Api.Models.Common;
+using PaymentGateway.Api.Models.Options;
 using PaymentGateway.Api.Models.Requests;
 
 namespace PaymentGateway.Api.UnitTests.Models.Requests;
 
 public class PaymentRequestValidatorTests
 {
-    private readonly PaymentRequestValidator _validator = new();
-
-    private static PaymentRequest ValidRequest() => new()
-    {
-        CardNumber = "12345678901234",
-        Expiry = new Expiry(DateTime.Today.Year + 1, 6),
-        Money = new Money("GBP", 1050),
-        Cvv = "123"
-    };
+    private readonly PaymentRequestValidator _validator = new(
+    Options.Create(new PaymentOptions { SupportedISOCurrencyCodes = ["GBP", "EUR", "USD"] }));
 
     // ── CardNumber ──────────────────────────────────────────
 
@@ -160,4 +157,14 @@ public class PaymentRequestValidatorTests
         var result = _validator.TestValidate(ValidRequest());
         result.ShouldNotHaveAnyValidationErrors();
     }
+
+    // ── Helper methods ──────────────────────────────────
+
+    private static PaymentRequest ValidRequest() => new()
+    {
+        CardNumber = "12345678901234",
+        Expiry = new Expiry(DateTime.Today.Year + 1, 6),
+        Money = new Money("GBP", 1050),
+        Cvv = "123"
+    };
 }

@@ -1,5 +1,9 @@
 ﻿using FluentValidation;
+
+using Microsoft.Extensions.Options;
+
 using PaymentGateway.Api.Models.Common;
+using PaymentGateway.Api.Models.Options;
 namespace PaymentGateway.Api.Models.Requests;
 
 public record PaymentRequest
@@ -13,8 +17,7 @@ public record PaymentRequest
 
 public class PaymentRequestValidator : AbstractValidator<PaymentRequest>
 {
-    private static readonly string[] SupportedISOCurrencyCodes = ["GBP", "EUR", "USD"];
-    public PaymentRequestValidator()
+    public PaymentRequestValidator(IOptions<PaymentOptions> options)
     {
         RuleFor(x => x.CardNumber).
             NotEmpty().
@@ -34,7 +37,7 @@ public class PaymentRequestValidator : AbstractValidator<PaymentRequest>
             RuleFor(x => x.Money.Currency).
                 NotEmpty().
                 Length(3).
-                Must(c => SupportedISOCurrencyCodes.Contains(c)).WithMessage("Currency must be one of: " + string.Join(", ", SupportedISOCurrencyCodes));
+                Must(c => options.Value.SupportedISOCurrencyCodes.Contains(c)).WithMessage("Currency must be one of: " + string.Join(", ", options.Value.SupportedISOCurrencyCodes));
         });
         
         RuleFor(x => x.Cvv).
