@@ -1,8 +1,10 @@
 using System.Text.Json.Serialization;
+
 using FluentValidation;
+
 using PaymentGateway.Api.Clients;
-using PaymentGateway.Api.Models.Options;
 using PaymentGateway.Api.Models.Requests;
+using PaymentGateway.Api.Options;
 using PaymentGateway.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);

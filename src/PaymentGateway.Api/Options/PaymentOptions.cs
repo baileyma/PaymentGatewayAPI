@@ -1,4 +1,4 @@
-﻿namespace PaymentGateway.Api.Models.Options
+﻿namespace PaymentGateway.Api.Options
 {
     public class PaymentOptions
     {

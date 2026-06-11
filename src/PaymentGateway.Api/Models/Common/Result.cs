@@ -1,6 +1,4 @@
-﻿using System.Text.Json.Serialization;
-
-using PaymentGateway.Api.Models.Enums;
+﻿using PaymentGateway.Api.Models.Enums;
 
 namespace PaymentGateway.Api.Models.Common;
 

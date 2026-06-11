@@ -1,6 +1,5 @@
 ﻿using System.Net;
 using System.Text.Json;
-
 using PaymentGateway.Api.Models.Requests;
 using PaymentGateway.Api.Models.Responses;
 

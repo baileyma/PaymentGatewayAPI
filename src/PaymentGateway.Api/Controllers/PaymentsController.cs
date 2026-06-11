@@ -1,9 +1,6 @@
 ﻿using System.Net;
-
 using FluentValidation;
-
 using Microsoft.AspNetCore.Mvc;
-
 using PaymentGateway.Api.Clients;
 using PaymentGateway.Api.Mappers;
 using PaymentGateway.Api.Models.Common;
