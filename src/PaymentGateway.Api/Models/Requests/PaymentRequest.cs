@@ -3,7 +3,8 @@
 using Microsoft.Extensions.Options;
 
 using PaymentGateway.Api.Models.Common;
-using PaymentGateway.Api.Options;
+using PaymentGateway.Api.Models.Options;
+
 namespace PaymentGateway.Api.Models.Requests;
 
 public record PaymentRequest

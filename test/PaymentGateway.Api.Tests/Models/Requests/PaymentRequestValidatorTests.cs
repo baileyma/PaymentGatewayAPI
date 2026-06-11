@@ -1,7 +1,5 @@
 using FluentValidation.TestHelper;
-
 using Microsoft.Extensions.Options;
-
 using PaymentGateway.Api.Models.Common;
 using PaymentGateway.Api.Models.Options;
 using PaymentGateway.Api.Models.Requests;

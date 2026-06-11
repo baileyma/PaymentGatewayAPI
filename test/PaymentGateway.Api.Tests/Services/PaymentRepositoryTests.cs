@@ -1,5 +1,4 @@
 using AutoFixture;
-
 using PaymentGateway.Api.Models.Common;
 using PaymentGateway.Api.Models.Responses;
 using PaymentGateway.Api.Services;
